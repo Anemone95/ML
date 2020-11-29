@@ -1,0 +1,1 @@
+from .moduleA import func_module_a

@@ -4,3 +4,4 @@ target
 .idea
 .jython_cache
 __pycache__
+*.pyc

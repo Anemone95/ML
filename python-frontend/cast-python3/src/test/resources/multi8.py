@@ -1,3 +1,3 @@
-import pkg
-print(pkg.multi6.silly(1))
-print(pkg.multi6.x)
+import module1
+print(module1.multi6.silly(1))
+print(module1.multi6.x)
