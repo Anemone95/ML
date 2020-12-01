@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import com.ibm.wala.cast.python.parser.AbstractParser;
+import com.ibm.wala.cast.python.parser.AbstractTransToCAst;
 import org.python.antlr.PythonTree;
 import org.python.antlr.ast.Assert;
 import org.python.antlr.ast.Assign;
@@ -121,7 +121,7 @@ import com.ibm.wala.util.warnings.Warning;
 import com.ibm.wala.cast.python.types.PythonTypes;
 import com.ibm.wala.cast.python.ir.PythonCAstToIRTranslator;
 
-abstract public class PythonParser<T> extends AbstractParser<T> {
+abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
 
 	private static boolean COMPREHENSION_IR = true;
 
@@ -212,7 +212,7 @@ abstract public class PythonParser<T> extends AbstractParser<T> {
 
 	private final CAst Ast = new CAstImpl();
 	
-	private class CAstVisitor extends com.ibm.wala.cast.python.parser.AbstractParser<T>.CAstVisitor implements VisitorIF<CAstNode>  {
+	private class CAstVisitor extends AbstractTransToCAst<T>.CAstVisitor implements VisitorIF<CAstNode>  {
 		private final WalkContext context;
 		private final WalaPythonParser parser;
 		

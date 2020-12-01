@@ -36,62 +36,66 @@ import com.ibm.wala.ipa.cha.IClassHierarchy;
 import com.ibm.wala.cast.python.loader.PythonLoader;
 
 public class Python3Loader extends PythonLoader {
-	public Python3Loader(IClassHierarchy cha, IClassLoader parent) {
-		super(cha, parent);
-	}
+    public Python3Loader(IClassHierarchy cha, IClassLoader parent) {
+        super(cha, parent);
+    }
 
-	public Python3Loader(IClassHierarchy cha) {
-		// 初始化时cha为空
-		super(cha);
-	}
+    public Python3Loader(IClassHierarchy cha) {
+        // 初始化时cha为空
+        super(cha);
+    }
 
 
-	@Override
-	protected TranslatorToCAst getTranslatorToCAst(CAst ast, ModuleEntry M) throws IOException {
-		RewritingTranslatorToCAst x = new RewritingTranslatorToCAst(M, new PythonModuleParser((SourceModule)M, typeDictionary) {
-			@Override
-			public CAstEntity translateToCAst() throws Error, IOException {
-				CAstEntity ce =  super.translateToCAst();
-				return new AstConstantFolder().fold(ce);
-			}
-		});
+    @Override
+    protected TranslatorToCAst getTranslatorToCAst(CAst ast, ModuleEntry M) throws IOException {
+        RewritingTranslatorToCAst x = new RewritingTranslatorToCAst(M, new PythonModuleParser((SourceModule) M, typeDictionary) {
+            @Override
+            public CAstEntity translateToCAst() throws Error, IOException {
+                CAstEntity ce = super.translateToCAst();
+                return new AstConstantFolder().fold(ce);
+            }
+        });
 
-		x.addRewriter(new CAstRewriterFactory<NonCopyingContext,NoKey>() {
-			@Override
-			public PatternBasedRewriter createCAstRewriter(CAst ast) {
-				return new PatternBasedRewriter(ast, sliceAssign, (Segments s) -> { return rewriteSubscriptAssign(s); });
-			}
-		}, false);
+        x.addRewriter(new CAstRewriterFactory<NonCopyingContext, NoKey>() {
+            @Override
+            public PatternBasedRewriter createCAstRewriter(CAst ast) {
+                return new PatternBasedRewriter(ast, sliceAssign, (Segments s) -> {
+                    return rewriteSubscriptAssign(s);
+                });
+            }
+        }, false);
 
-		x.addRewriter(new CAstRewriterFactory<NonCopyingContext,NoKey>() {
-			@Override
-			public PatternBasedRewriter createCAstRewriter(CAst ast) {
-				return new PatternBasedRewriter(ast, sliceAssignOp, (Segments s) -> { return rewriteSubscriptAssignOp(s); });
-			}
-		}, false);
+        x.addRewriter(new CAstRewriterFactory<NonCopyingContext, NoKey>() {
+            @Override
+            public PatternBasedRewriter createCAstRewriter(CAst ast) {
+                return new PatternBasedRewriter(ast, sliceAssignOp, (Segments s) -> {
+                    return rewriteSubscriptAssignOp(s);
+                });
+            }
+        }, false);
 
-		x.addRewriter(new CAstRewriterFactory<NonCopyingContext,NoKey>() {
-			@Override
-			public ConstantFoldingRewriter createCAstRewriter(CAst ast) {
-				return new ConstantFoldingRewriter(ast) {
-					@Override
-					protected Object eval(CAstOperator op, Object lhs, Object rhs) {
-						try {
-							PyObject x = Python3Interpreter.getInterp().eval(lhs + " " + op.getValue() + " " + rhs);
-							if (x.isNumberType()) {
-								System.err.println(lhs + " " + op.getValue() + " " + rhs + " -> " + x.asInt());
-								return x.asInt();
-							}
-						} catch (Exception e) {
-							// interpreter died for some reason, so no information.
-						}
-						return null;
-					}
-				};
-			}
-			
-		}, false);
-		return x;
-	}
+        x.addRewriter(new CAstRewriterFactory<NonCopyingContext, NoKey>() {
+            @Override
+            public ConstantFoldingRewriter createCAstRewriter(CAst ast) {
+                return new ConstantFoldingRewriter(ast) {
+                    @Override
+                    protected Object eval(CAstOperator op, Object lhs, Object rhs) {
+                        try {
+                            PyObject x = Python3Interpreter.getInterp().eval(lhs + " " + op.getValue() + " " + rhs);
+                            if (x.isNumberType()) {
+                                System.err.println(lhs + " " + op.getValue() + " " + rhs + " -> " + x.asInt());
+                                return x.asInt();
+                            }
+                        } catch (Exception e) {
+                            // interpreter died for some reason, so no information.
+                        }
+                        return null;
+                    }
+                };
+            }
+
+        }, false);
+        return x;
+    }
 
 }

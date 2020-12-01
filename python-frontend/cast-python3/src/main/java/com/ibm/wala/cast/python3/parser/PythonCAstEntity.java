@@ -17,7 +17,7 @@ class PythonCAstEntity extends AbstractScriptEntity {
         super(pythonParser.scriptName(), scriptType);
         this.jythonAst = jythonAst;
         PythonParser.WalkContext context = new PythonParser.FunctionContext(root, this, jythonAst);
-        this.visitor = pythonParser.new CAstVisitor(context, parser);
+        this.visitor = pythonParser.new CAstVisitor(pythonParser.scriptName(), context, parser);
         this.cast = this.jythonAst.<CAstNode>accept(this.visitor);
     }
 

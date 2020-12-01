@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import com.ibm.wala.cast.python.parser.AbstractParser;
+import com.ibm.wala.cast.python.parser.AbstractTransToCAst;
 import com.ibm.wala.cast.tree.*;
 import org.python.antlr.PythonTree;
 import org.python.antlr.ast.Assert;
@@ -127,7 +127,7 @@ import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.collections.ReverseIterator;
 import com.ibm.wala.util.warnings.Warning;
 
-abstract public class PythonParser<T> extends AbstractParser<T> {
+abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
 
     public static boolean COMPREHENSION_IR = true;
 
@@ -216,7 +216,7 @@ abstract public class PythonParser<T> extends AbstractParser<T> {
         }
     }
 
-    public class CAstVisitor extends AbstractParser<T>.CAstVisitor implements VisitorIF<CAstNode> {
+    public class CAstVisitor extends AbstractTransToCAst<T>.CAstVisitor implements VisitorIF<CAstNode> {
         private final WalkContext context;
         private final WalaPythonParser parser;
 
@@ -226,7 +226,8 @@ abstract public class PythonParser<T> extends AbstractParser<T> {
             return cast.makeNode(CAstNode.EMPTY);
         }
 
-        CAstVisitor(WalkContext context, WalaPythonParser parser) {
+        CAstVisitor(String scriptName, WalkContext context, WalaPythonParser parser) {
+            super(scriptName);
             this.context = context;
             this.parser = parser;
         }
@@ -673,7 +674,7 @@ abstract public class PythonParser<T> extends AbstractParser<T> {
                 }
             };
 
-            CAstVisitor v = new CAstVisitor(child, parser);
+            CAstVisitor v = new CAstVisitor(scriptName(), child, parser);
             for (stmt e : arg0.getInternalBody()) {
                 if (!(e instanceof Pass)) {
                     e.accept(v);
@@ -854,7 +855,7 @@ abstract public class PythonParser<T> extends AbstractParser<T> {
             Pass b = new Pass();
             Pass c = new Pass();
             LoopContext x = new LoopContext(context, b, c);
-            CAstVisitor child = new CAstVisitor(x, parser);
+            CAstVisitor child = new CAstVisitor(scriptName(), x, parser);
 
             CAstNode breakStmt = b.accept(this);
             context.cfg().map(b, breakStmt);
@@ -1143,7 +1144,7 @@ abstract public class PythonParser<T> extends AbstractParser<T> {
             PythonCodeEntity fun = new PythonCodeEntity(functionType);
 
             FunctionContext child = new FunctionContext(context, fun, function);
-            CAstVisitor cv = new CAstVisitor(child, parser);
+            CAstVisitor cv = new CAstVisitor(scriptName(), child, parser);
             for (S s : body) {
                 nodes[i++] = s.accept(cv);
             }
@@ -1256,19 +1257,28 @@ abstract public class PythonParser<T> extends AbstractParser<T> {
 
         /**
          * 处理 import 的ast
+         *
          * @param names
          * @return
          */
         private CAstNode importAst(java.util.List<Name> names) {
-            // FIXME import a.b 不需要变两 import a, load a.b
-            names.get(0).toString();
-            new Name(names.get(0).getType()).setId(new PyObject());
-            StringBuffer importPackage=new StringBuffer();
+            StringBuffer pkgNameStr = new StringBuffer();
+            // import ...pkg
+            int i = 0;
+            while (i < names.size() && names.get(i).getInternalId().equals(".")) {
+                pkgNameStr.append(names.get(i).getInternalId());
+                i++;
+            }
+            pkgNameStr.append(names.get(i).getInternalId());
 
             CAstNode cAstNode = cast.makeNode(CAstNode.PRIMITIVE, cast.makeConstant("import"),
-                    cast.makeConstant(names.get(0).getInternalId()));
-            CAstNode importAst = notePosition(cAstNode, names.get(0));
-            for (int i = 1; i < names.size(); i++) {
+                    cast.makeConstant(pkgNameStr.toString()));
+
+            Name pkgName = new Name(names.get(i).getType());
+            pkgName.setId(new PyObject());
+            CAstNode importAst = notePosition(cAstNode, pkgName);
+            i++;
+            for (; i < names.size(); i++) {
                 importAst = notePosition(cast.makeNode(CAstNode.OBJECT_REF,
                         importAst,
                         cast.makeConstant(names.get(i).getInternalId())), names.get(i));
@@ -1661,7 +1671,7 @@ abstract public class PythonParser<T> extends AbstractParser<T> {
             }
 
             TryCatchContext catches = new TryCatchContext(context, handlers);
-            CAstVisitor child = new CAstVisitor(catches, parser);
+            CAstVisitor child = new CAstVisitor(scriptName(), catches, parser);
             CAstNode block = child.block(arg0.getInternalBody());
 
             return cast.makeNode(CAstNode.TRY,
@@ -1731,7 +1741,7 @@ abstract public class PythonParser<T> extends AbstractParser<T> {
             Pass b = new Pass();
             Pass c = new Pass();
             LoopContext x = new LoopContext(context, b, c);
-            CAstVisitor child = new CAstVisitor(x, parser);
+            CAstVisitor child = new CAstVisitor(scriptName(), x, parser);
 
             if (arg0.getInternalOrelse() == null || arg0.getInternalOrelse().size() == 0) {
                 return
