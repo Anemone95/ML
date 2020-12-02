@@ -95,7 +95,6 @@ public abstract class PythonLoader extends CAstAbstractModuleLoader {
     private final CAst Ast = new CAstImpl();
     protected final CAstPattern sliceAssign = CAstPattern.parse("<top>ASSIGN(CALL(VAR(\"slice\"),<args>**),<value>*)");
 
-    private String[] rootPath;
     private Class<?> moduleClass;
 
     /**
@@ -106,40 +105,12 @@ public abstract class PythonLoader extends CAstAbstractModuleLoader {
     @Override
     public void init(final List<Module> modules) {
         for (Module module : modules) {
-            if (module instanceof PyLibURLModule){
-                continue;
-            }
-            Class<?> thisModuleClass = module.getClass();
-            if (moduleClass == null) {
-                moduleClass = thisModuleClass;
-            } else if (!moduleClass.equals(thisModuleClass)) {
-                System.err.println("[WARN] module type doesn't match, to ensure project root, plz use same module type");
-            }
             for (Iterator<? extends ModuleEntry> it = module.getEntries(); it.hasNext(); ) {
                 ModuleEntry moduleEntry = it.next();
-                // 只能保证同一种来源
-                String s = moduleEntry.getName();
-                String[] path = s.split("/");
-                if (rootPath == null || rootPath.length > path.length) {
-                    rootPath = path;
-                }
-            }
-        }
-
-        rootPath = Arrays.copyOfRange(rootPath, 0, rootPath.length - 1);
-
-        for (Module module : modules) {
-            if (module instanceof PyLibURLModule){
-                // TODO lib库特殊处理
-                continue;
-            } else {
-                for (Iterator<? extends ModuleEntry> it = module.getEntries(); it.hasNext(); ) {
-                    ModuleEntry moduleEntry = it.next();
-                    String path = moduleEntry.getName();
-                    TypeName moduleName = TypeName.string2TypeName("Lscript " + PathUtil.relPath(path, rootPath));
-                    CoreClass tempPyScript = new CoreClass(moduleName, EmptyPyScript.getName(), this, null);
-                    types.put(moduleName, tempPyScript);
-                }
+                String path = moduleEntry.getName();
+                TypeName moduleName = TypeName.string2TypeName("Lscript " + path);
+                CoreClass tempPyScript = new CoreClass(moduleName, EmptyPyScript.getName(), this, null);
+                types.put(moduleName, tempPyScript);
             }
         }
         super.init(modules);

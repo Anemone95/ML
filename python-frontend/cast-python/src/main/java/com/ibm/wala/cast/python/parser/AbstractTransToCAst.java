@@ -1,6 +1,10 @@
 package com.ibm.wala.cast.python.parser;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 
 import com.ibm.wala.cast.ir.translator.TranslatorToCAst;
@@ -54,15 +58,26 @@ public abstract class AbstractTransToCAst<T> implements TranslatorToCAst {
                                 CAstSourcePositionMap.NO_INFORMATION));
             }
 
-            File file = new File(scriptName);        //获取其file对象
+            File file = null;        //获取其file对象
+            try {
+                file = new File(new URI(scriptName));
+            } catch (URISyntaxException e) {
+                e.printStackTrace();
+                return;
+            }
             File[] fs = file.getParentFile().listFiles();    //遍历path下的文件和目录，放在File数组中
             for (File f : fs) {                    //遍历File[]数组
-                String n=f.getAbsolutePath();
+                String scriptName;
+                if (f.isDirectory()) {
+                    scriptName = f.toURI().toString() + "/__init__.py";
+                } else {
+                    scriptName = f.toURI().toString();
+                }
                 elts.add(
                         notePosition(
                                 cast.makeNode(CAstNode.DECL_STMT,
-                                        cast.makeConstant(new CAstSymbolImpl(n, PythonCAstToIRTranslator.Any)),
-                                        cast.makeNode(CAstNode.PRIMITIVE, cast.makeConstant("import"), cast.makeConstant(n))),
+                                        cast.makeConstant(new CAstSymbolImpl(scriptName, PythonCAstToIRTranslator.Any)),
+                                        cast.makeNode(CAstNode.PRIMITIVE, cast.makeConstant("import"), cast.makeConstant(scriptName))),
                                 CAstSourcePositionMap.NO_INFORMATION));
             }
         }
