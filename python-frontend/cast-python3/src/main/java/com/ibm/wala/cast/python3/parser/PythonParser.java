@@ -13,6 +13,7 @@ package com.ibm.wala.cast.python3.parser;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,7 +23,9 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import com.ibm.wala.cast.python.global.SystemPath;
 import com.ibm.wala.cast.python.parser.AbstractTransToCAst;
+import com.ibm.wala.cast.python.util.PathUtil;
 import com.ibm.wala.cast.tree.*;
 import org.python.antlr.PythonTree;
 import org.python.antlr.ast.Assert;
@@ -1262,17 +1265,31 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
          * @return
          */
         private CAstNode importAst(java.util.List<Name> names) {
-            StringBuffer pkgNameStr = new StringBuffer();
+            // 解析绝对路径
+            Path scriptPath = PathUtil.getPath(scriptName());
+
+
             // import ...pkg
             int i = 0;
             while (i < names.size() && names.get(i).getInternalId().equals(".")) {
-                pkgNameStr.append(names.get(i).getInternalId());
+                scriptPath = scriptPath.getParent();
                 i++;
             }
-            pkgNameStr.append(names.get(i).getInternalId());
+            scriptPath = scriptPath.resolve(names.get(i).getInternalId());
+
+
+            Path importedPath;
+            if (i > 0) {
+                importedPath = scriptPath;
+            } else {
+                importedPath = SystemPath.getInstance().getImportModule(scriptName(), names.get(i).getInternalId());
+            }
+            if (importedPath.toFile().isDirectory()) {
+                importedPath.resolve("__init__");
+            }
 
             CAstNode cAstNode = cast.makeNode(CAstNode.PRIMITIVE, cast.makeConstant("import"),
-                    cast.makeConstant(pkgNameStr.toString()));
+                    cast.makeConstant(importedPath.toUri().toString().replace("file:///","file:/")));
 
             Name pkgName = new Name(names.get(i).getType());
             pkgName.setId(new PyObject());

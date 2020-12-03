@@ -38,10 +38,10 @@ public class TestMulti extends TestPythonCallGraphShape {
         PythonAnalysisEngine<?> engine = makeEngine("multi2.py", "multi1.py");
         PropagationCallGraphBuilder builder = (PropagationCallGraphBuilder) engine.defaultCallGraphBuilder();
         CallGraph CG = builder.makeCallGraph(engine.getOptions(), new NullProgressMonitor());
-        verifyGraphAssertions(CG, assertionsMulti1);
         CAstCallGraphUtil.AVOID_DUMP = false;
         CAstCallGraphUtil.dumpCG((SSAContextInterpreter) builder.getContextInterpreter(), builder.getPointerAnalysis(), CG);
         DotUtil.dotify(CG, null, PDFTypeHierarchy.DOT_FILE, "callgraph.pdf", "dot");
+        verifyGraphAssertions(CG, assertionsMulti1);
     }
 
     @Test

@@ -222,7 +222,8 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
 			return Ast.makeNode(CAstNode.EMPTY);
 		}
 		
-		private CAstVisitor(WalkContext context, WalaPythonParser parser) {
+		private CAstVisitor(String scriptName, WalkContext context, WalaPythonParser parser) {
+			super(scriptName);
 			this.context = context;
 			this.parser = parser;
 		}
@@ -608,7 +609,7 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
 				}				
 			};			
 
-			CAstVisitor v = new CAstVisitor(child, parser);
+			CAstVisitor v = new CAstVisitor(scriptName(), child, parser);
 			for(stmt e : arg0.getInternalBody()) {
 				if (! (e instanceof Pass)) {
 					e.accept(v);			
@@ -773,7 +774,7 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
 			Pass b = new Pass();
 			Pass c = new Pass();
 			LoopContext x = new LoopContext(context, b, c);
-			CAstVisitor child = new CAstVisitor(x, parser);
+			CAstVisitor child = new CAstVisitor(scriptName(), x, parser);
 
 			CAstNode breakStmt = b.accept(this);
 			context.cfg().map(b, breakStmt);
@@ -1013,7 +1014,7 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
 			};
 
 			FunctionContext child = new FunctionContext(context, fun, function);
-			CAstVisitor cv = new CAstVisitor(child, parser);
+			CAstVisitor cv = new CAstVisitor(scriptName(), child, parser);
 			for(S s : body) {
 				nodes[i++] = s.accept(cv);
 			}
@@ -1516,7 +1517,7 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
 			}
 				
 			TryCatchContext catches = new TryCatchContext(context, handlers);
-			CAstVisitor child = new CAstVisitor(catches, parser);
+			CAstVisitor child = new CAstVisitor(scriptName(), catches, parser);
 			CAstNode block = child.block(arg0.getInternalBody());
 			
 			return Ast.makeNode(CAstNode.TRY,
@@ -1586,7 +1587,7 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
 			Pass b = new Pass();
 			Pass c = new Pass();
 			LoopContext x = new LoopContext(context, b, c);
-			CAstVisitor child = new CAstVisitor(x, parser);
+			CAstVisitor child = new CAstVisitor(scriptName(), x, parser);
 			
 			if (arg0.getInternalOrelse() == null || arg0.getInternalOrelse().size() == 0) {
 				return
@@ -1729,7 +1730,7 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
 				
 				{
 					context = new FunctionContext(root, this, pythonAst);
-					visitor = new CAstVisitor(context, parser);
+					visitor = new CAstVisitor(scriptName(), context, parser);
 					cast = pythonAst.accept(visitor);
 				}
 				

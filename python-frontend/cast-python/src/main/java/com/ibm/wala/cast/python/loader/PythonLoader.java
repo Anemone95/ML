@@ -1,5 +1,6 @@
 package com.ibm.wala.cast.python.loader;
 
+import java.nio.file.Path;
 import java.util.*;
 
 import com.ibm.wala.cast.ir.translator.AstTranslator.AstLexicalInformation;
@@ -7,6 +8,7 @@ import com.ibm.wala.cast.ir.translator.AstTranslator.WalkContext;
 import com.ibm.wala.cast.ir.translator.TranslatorToIR;
 import com.ibm.wala.cast.loader.AstMethod.DebuggingInformation;
 import com.ibm.wala.cast.loader.CAstAbstractModuleLoader;
+import com.ibm.wala.cast.python.global.SystemPath;
 import com.ibm.wala.cast.python.ir.PythonCAstToIRTranslator;
 import com.ibm.wala.cast.python.ir.PythonLanguage;
 import com.ibm.wala.cast.python.module.PyLibURLModule;
@@ -104,6 +106,30 @@ public abstract class PythonLoader extends CAstAbstractModuleLoader {
      */
     @Override
     public void init(final List<Module> modules) {
+        Path rootPath=null;
+        for (Module module : modules) {
+            if (module instanceof PyLibURLModule){
+                continue;
+            }
+            Class<?> thisModuleClass = module.getClass();
+            if (moduleClass == null) {
+                moduleClass = thisModuleClass;
+            } else if (!moduleClass.equals(thisModuleClass)) {
+                System.err.println("[WARN] module type doesn't match, to ensure project root, plz use same module type");
+            }
+            for (Iterator<? extends ModuleEntry> it = module.getEntries(); it.hasNext(); ) {
+                ModuleEntry moduleEntry = it.next();
+                // 只能保证同一种来源
+                Path modulePath = PathUtil.getPath(moduleEntry.getName());
+                if (rootPath == null || rootPath.toString().length() > modulePath.getParent().toString().length()) {
+                    rootPath = modulePath.getParent();
+                }
+            }
+        }
+
+        SystemPath.getInstance().setAppPath(rootPath);
+
+
         for (Module module : modules) {
             for (Iterator<? extends ModuleEntry> it = module.getEntries(); it.hasNext(); ) {
                 ModuleEntry moduleEntry = it.next();
