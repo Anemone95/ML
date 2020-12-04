@@ -1275,8 +1275,8 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
                 scriptPath = scriptPath.getParent();
                 i++;
             }
-            scriptPath = scriptPath.resolve(names.get(i).getInternalId());
-
+            if (i + 1 < names.size())
+                scriptPath = scriptPath.resolve(names.get(i).getInternalId());
 
             Path importedPath;
             if (i > 0) {
@@ -1285,13 +1285,13 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
                 importedPath = SystemPath.getInstance().getImportModule(scriptName(), names.get(i).getInternalId());
             }
             if (importedPath.toFile().isDirectory()) {
-                importedPath.resolve("__init__");
+                importedPath = importedPath.resolve("__init__");
             }
 
             CAstNode cAstNode = cast.makeNode(CAstNode.PRIMITIVE, cast.makeConstant("import"),
-                    cast.makeConstant(importedPath.toUri().toString().replace("file:///","file:/")));
+                    cast.makeConstant(importedPath.toUri().toString().replace("file:///", "file:/")));
 
-            Name pkgName = new Name(names.get(i).getType());
+            Name pkgName = new Name(names.get(0).getType());
             pkgName.setId(new PyObject());
             CAstNode importAst = notePosition(cAstNode, pkgName);
             i++;

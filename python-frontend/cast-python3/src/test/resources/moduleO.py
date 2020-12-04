@@ -1,0 +1,2 @@
+def funcO():
+    return "O"

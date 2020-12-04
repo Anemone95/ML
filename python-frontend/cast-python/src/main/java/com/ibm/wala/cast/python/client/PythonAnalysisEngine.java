@@ -104,9 +104,11 @@ public abstract class PythonAnalysisEngine<T>
 			setClassHierarchy(cha);
 			return cha;
 		} catch (ClassHierarchyException e) {
+			e.printStackTrace();
 			assert false : e;
 			return null;
 		} catch (WalaException e) {
+			e.printStackTrace();
 			throw new WalaRuntimeException(e.getMessage());
 		}
 	}
