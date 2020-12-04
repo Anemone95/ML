@@ -77,8 +77,18 @@ public class TestMulti extends TestPythonCallGraphShape {
     }
 
     @Test
-    public void testMultiN() throws WalaException, IllegalArgumentException, CancelException, IOException {
-        PythonAnalysisEngine<?> engine = makeEngine("moduleN.py", "moduleO.py");
+    public void testCase1() throws WalaException, IllegalArgumentException, CancelException, IOException {
+        PythonAnalysisEngine<?> engine = makeEngine("case1/moduleN.py", "case1/moduleO.py", "case1/moduleP.py");
+        PropagationCallGraphBuilder builder = (PropagationCallGraphBuilder) engine.defaultCallGraphBuilder();
+        CallGraph CG = builder.makeCallGraph(engine.getOptions(), new NullProgressMonitor());
+        CAstCallGraphUtil.AVOID_DUMP = false;
+        CAstCallGraphUtil.dumpCG((SSAContextInterpreter) builder.getContextInterpreter(), builder.getPointerAnalysis(), CG);
+        DotUtil.dotify(CG, null, PDFTypeHierarchy.DOT_FILE, "callgraph.pdf", "dot");
+    }
+
+    @Test
+    public void testMultiN2() throws WalaException, IllegalArgumentException, CancelException, IOException {
+        PythonAnalysisEngine<?> engine = makeEngine("pkg1/__init__.py", "pkg1/moduleD.py", "case1/moduleP.py");
         PropagationCallGraphBuilder builder = (PropagationCallGraphBuilder) engine.defaultCallGraphBuilder();
         CallGraph CG = builder.makeCallGraph(engine.getOptions(), new NullProgressMonitor());
         CAstCallGraphUtil.AVOID_DUMP = false;

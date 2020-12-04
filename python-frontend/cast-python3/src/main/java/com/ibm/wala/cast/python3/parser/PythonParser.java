@@ -1513,6 +1513,10 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
                     elts.add(c.accept(this));
                 }
                 return cast.makeNode(CAstNode.BLOCK_EXPR, elts.toArray(new CAstNode[elts.size()]));
+            } else if (scriptName().endsWith("__init__.py")){
+                java.util.List<CAstNode> elts = new ArrayList<CAstNode>();
+                defaultImports(elts);
+                return cast.makeNode(CAstNode.BLOCK_EXPR, elts.toArray(new CAstNode[elts.size()]));
             } else {
                 return cast.makeNode(CAstNode.EMPTY);
             }

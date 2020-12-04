@@ -65,19 +65,25 @@ public abstract class AbstractTransToCAst<T> implements TranslatorToCAst {
                 e.printStackTrace();
                 return;
             }
-            if (scriptName.endsWith("__init__.py")){
+            if (scriptName.endsWith("__init__.py")) {
                 File[] fs = file.getParentFile().listFiles();    //遍历path下的文件和目录，放在File数组中
                 for (File f : fs) {                    //遍历File[]数组
                     String scriptName;
                     if (f.isDirectory()) {
-                        scriptName = f.toURI().toString() + "__init__.py";
+                        scriptName = f.toURI().toString() + "__init__";
                     } else {
                         scriptName = f.toURI().toString();
+                        scriptName = scriptName.substring(0, scriptName.length() - 3);
+                    }
+                    Path rel = file.getParentFile().toPath().relativize(f.toPath());
+                    String field = rel.toString();
+                    if (rel.endsWith(".py")) {
+                        field = field.substring(0, field.length() - 3);
                     }
                     elts.add(
                             notePosition(
                                     cast.makeNode(CAstNode.DECL_STMT,
-                                            cast.makeConstant(new CAstSymbolImpl(scriptName, PythonCAstToIRTranslator.Any)),
+                                            cast.makeConstant(new CAstSymbolImpl(field, PythonCAstToIRTranslator.Any)),
                                             cast.makeNode(CAstNode.PRIMITIVE, cast.makeConstant("import"), cast.makeConstant(scriptName))),
                                     CAstSourcePositionMap.NO_INFORMATION));
                 }

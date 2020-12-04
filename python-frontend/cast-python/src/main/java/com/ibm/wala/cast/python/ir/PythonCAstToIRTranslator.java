@@ -12,6 +12,7 @@ package com.ibm.wala.cast.python.ir;
 
 import static com.ibm.wala.cast.python.ir.PythonLanguage.Python;
 
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -27,10 +28,12 @@ import com.ibm.wala.cast.ir.translator.ArrayOpHandler;
 import com.ibm.wala.cast.ir.translator.AstTranslator;
 import com.ibm.wala.cast.loader.AstMethod.DebuggingInformation;
 import com.ibm.wala.cast.loader.DynamicCallSiteReference;
+import com.ibm.wala.cast.python.global.SystemPath;
 import com.ibm.wala.cast.python.loader.DynamicAnnotatableEntity;
 import com.ibm.wala.cast.python.loader.PythonLoader;
 import com.ibm.wala.cast.python.ssa.PythonInvokeInstruction;
 import com.ibm.wala.cast.python.types.PythonTypes;
+import com.ibm.wala.cast.python.util.PathUtil;
 import com.ibm.wala.cast.tree.CAstEntity;
 import com.ibm.wala.cast.tree.CAstNode;
 import com.ibm.wala.cast.tree.CAstSourcePositionMap.Position;
@@ -59,6 +62,7 @@ import com.ibm.wala.util.collections.HashMapFactory;
 import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.collections.Pair;
 import com.ibm.wala.util.strings.Atom;
+import com.sun.javafx.scene.shape.PathUtils;
 
 public class PythonCAstToIRTranslator extends AstTranslator {
 
@@ -451,7 +455,6 @@ public class PythonCAstToIRTranslator extends AstTranslator {
     }
 
     /**
-     *
      * @param context
      * @param call
      * @param result
@@ -548,6 +551,7 @@ public class PythonCAstToIRTranslator extends AstTranslator {
 
     /**
      * 处理import语句
+     *
      * @param resultVal
      * @param context
      * @param primitiveCall
@@ -561,14 +565,33 @@ public class PythonCAstToIRTranslator extends AstTranslator {
             if (loader.lookupClass(TypeName.findOrCreate("Lscript " + name + ".py")) != null) {
                 FieldReference global = makeGlobalRef("script " + name + ".py");
                 context.cfg().addInstruction(new AstGlobalRead(context.cfg().getCurrentInstruction(), resultVal, global));
-//                FieldReference fnField = FieldReference.findOrCreate(PythonTypes.Root, Atom.findOrCreateUnicodeAtom(fn.getName()), PythonTypes.Root);
+//                不应该在这写， 拿不到OOO
+//                SystemPath.getInstance().getAppPath().relativize(PathUtil.getPath(name));
+//                FieldReference fnField = FieldReference.findOrCreate(PythonTypes.Root, Atom.findOrCreateUnicodeAtom("OOO"), PythonTypes.Root);
 //                context.cfg().addInstruction(Python.instructionFactory().PutInstruction(context.cfg().getCurrentInstruction(), 1, resultVal, fnField));
-            }  else {
+            } else {
                 TypeReference imprt = TypeReference.findOrCreate(PythonTypes.pythonLoader, "L" + name);
                 MethodReference call = MethodReference.findOrCreate(imprt, "import", "()L" + primitiveCall.getChild(1).getValue());
                 context.cfg().addInstruction(Python.instructionFactory().InvokeInstruction(idx, resultVal, new int[0], context.currentScope().allocateTempValue(), CallSiteReference.make(idx, call, Dispatch.STATIC), null));
             }
         }
+    }
+
+    @Override
+    protected void leaveDeclStmt(CAstNode n, WalkContext context, CAstVisitor<WalkContext> visitor) {
+        if (n.getChild(1) != null && n.getChild(1).getKind() == CAstNode.PRIMITIVE
+                && n.getChild(1).getChild(0) != null && n.getChild(1).getChild(0).getValue() != null
+                && n.getChild(1).getChild(0).getValue().equals("import")
+                && n.getChild(1).getChild(1) != null
+                && loader.lookupClass(TypeName.findOrCreate("Lscript " + n.getChild(1).getChild(1).getValue() + ".py")) != null
+        ) {
+//            SystemPath.getInstance().getAppPath().relativize(PathUtil.getPath(name));
+            String fieldName = n.getChild(0).getValue().toString();
+            FieldReference fnField = FieldReference.findOrCreate(PythonTypes.Root, Atom.findOrCreateUnicodeAtom(fieldName), PythonTypes.Root);
+            int declVal = context.getValue(n.getChild(1));
+            context.cfg().addInstruction(Python.instructionFactory().PutInstruction(context.cfg().getCurrentInstruction(), 1, declVal, fnField));
+        }
+        super.leaveDeclStmt(n, context, visitor);
     }
 
     @Override
