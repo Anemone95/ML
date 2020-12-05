@@ -37,6 +37,7 @@ public class SystemPath {
         if (scriptName.startsWith(appPath.toUri().toString().replace("file:///", "file:/"))) {
             return appPath.resolve(module);
         }
+        System.err.println("Can't get module: " + module + " in " + appPath);
         throw new NotImplementedException();
     }
 

@@ -87,8 +87,8 @@ public class TestMulti extends TestPythonCallGraphShape {
     }
 
     @Test
-    public void testMultiN2() throws WalaException, IllegalArgumentException, CancelException, IOException {
-        PythonAnalysisEngine<?> engine = makeEngine("pkg1/__init__.py", "pkg1/moduleD.py", "case1/moduleP.py");
+    public void testCase2() throws WalaException, IllegalArgumentException, CancelException, IOException {
+        PythonAnalysisEngine<?> engine = makeEngine("pkg1/__init__.py", "pkg1/moduleD.py", "moduleQ.py");
         PropagationCallGraphBuilder builder = (PropagationCallGraphBuilder) engine.defaultCallGraphBuilder();
         CallGraph CG = builder.makeCallGraph(engine.getOptions(), new NullProgressMonitor());
         CAstCallGraphUtil.AVOID_DUMP = false;

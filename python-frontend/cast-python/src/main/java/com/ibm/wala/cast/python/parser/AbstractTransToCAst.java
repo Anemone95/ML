@@ -77,7 +77,7 @@ public abstract class AbstractTransToCAst<T> implements TranslatorToCAst {
                     }
                     Path rel = file.getParentFile().toPath().relativize(f.toPath());
                     String field = rel.toString();
-                    if (rel.endsWith(".py")) {
+                    if (rel.toString().endsWith(".py")) {
                         field = field.substring(0, field.length() - 3);
                     }
                     elts.add(

@@ -13,13 +13,7 @@ package com.ibm.wala.cast.python.ir;
 import static com.ibm.wala.cast.python.ir.PythonLanguage.Python;
 
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import com.ibm.wala.cast.ir.ssa.AssignInstruction;
 import com.ibm.wala.cast.ir.ssa.AstGlobalRead;
@@ -34,6 +28,7 @@ import com.ibm.wala.cast.python.loader.PythonLoader;
 import com.ibm.wala.cast.python.ssa.PythonInvokeInstruction;
 import com.ibm.wala.cast.python.types.PythonTypes;
 import com.ibm.wala.cast.python.util.PathUtil;
+import com.ibm.wala.cast.tree.CAst;
 import com.ibm.wala.cast.tree.CAstEntity;
 import com.ibm.wala.cast.tree.CAstNode;
 import com.ibm.wala.cast.tree.CAstSourcePositionMap.Position;
@@ -579,18 +574,37 @@ public class PythonCAstToIRTranslator extends AstTranslator {
 
     @Override
     protected void leaveDeclStmt(CAstNode n, WalkContext context, CAstVisitor<WalkContext> visitor) {
-        if (n.getChild(1) != null && n.getChild(1).getKind() == CAstNode.PRIMITIVE
-                && n.getChild(1).getChild(0) != null && n.getChild(1).getChild(0).getValue() != null
-                && n.getChild(1).getChild(0).getValue().equals("import")
-                && n.getChild(1).getChild(1) != null
-                && loader.lookupClass(TypeName.findOrCreate("Lscript " + n.getChild(1).getChild(1).getValue() + ".py")) != null
-        ) {
-//            SystemPath.getInstance().getAppPath().relativize(PathUtil.getPath(name));
-            String fieldName = n.getChild(0).getValue().toString();
-            FieldReference fnField = FieldReference.findOrCreate(PythonTypes.Root, Atom.findOrCreateUnicodeAtom(fieldName), PythonTypes.Root);
-            int declVal = context.getValue(n.getChild(1));
-            context.cfg().addInstruction(Python.instructionFactory().PutInstruction(context.cfg().getCurrentInstruction(), 1, declVal, fnField));
+        Queue<CAstNode> workList = new LinkedList<>();
+        workList.add(n);
+        CAstNode importCAst = null;
+        while (!workList.isEmpty()) {
+            CAstNode curr = workList.poll();
+            if (curr.getKind() == CAstNode.PRIMITIVE) {
+                importCAst = curr;
+                workList.clear();
+                break;
+            }
+            workList.addAll(curr.getChildren());
         }
+
+        if (importCAst != null) {
+            // import a
+//            SystemPath.getInstance().getAppPath().relativize(PathUtil.getPath(name));
+            String[] blackList = {"__name__", "print", "super", "hasattr", "BaseException", "abs", "del"};
+            Arrays.sort(blackList);
+            String fieldName = n.getChild(0).getValue().toString();
+            if (Arrays.binarySearch(blackList, fieldName) < 0) {
+                FieldReference fnField = FieldReference.findOrCreate(PythonTypes.Root, Atom.findOrCreateUnicodeAtom(fieldName), PythonTypes.Root);
+                int declVal = context.getValue(n.getChild(1));
+                context.cfg().addInstruction(Python.instructionFactory().PutInstruction(context.cfg().getCurrentInstruction(), 1, declVal, fnField));
+            }
+//            if (n.getChild(1).getChild(0) != null && n.getChild(1).getChild(0).getValue() != null
+//                    && n.getChild(1).getChild(0).getValue().equals("import")
+//                    && n.getChild(1).getChild(1) != null
+//                    && loader.lookupClass(TypeName.findOrCreate("Lscript " + n.getChild(1).getChild(1).getValue() + ".py")) != null) {
+//            }
+        }
+
         super.leaveDeclStmt(n, context, visitor);
     }
 

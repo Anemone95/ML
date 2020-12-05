@@ -8,4 +8,4 @@ import moduleO as OOO
 # print(pkg1.moduleD.func_module_d())
 # print(ppp.moduleD.func_module_d())
 
-print(OOO.funcO())
+# print(OOO.funcO())
