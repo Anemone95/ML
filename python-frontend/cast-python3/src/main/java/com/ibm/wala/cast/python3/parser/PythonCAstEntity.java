@@ -6,6 +6,9 @@ import com.ibm.wala.cast.tree.CAstSourcePositionMap;
 import com.ibm.wala.cast.tree.CAstType;
 import org.python.antlr.ast.Module;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 class PythonCAstEntity extends AbstractScriptEntity {
 
     private final Module jythonAst;
@@ -43,7 +46,11 @@ class PythonCAstEntity extends AbstractScriptEntity {
 
     @Override
     public String getName() {
-        // TODO "script " + relpath/file.getName();
-        return super.getName();
+        try {
+            return "script " + new URL(this.getFile().getPath()).toString();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 }

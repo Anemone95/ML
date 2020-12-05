@@ -3,6 +3,7 @@ package com.ibm.wala.cast.python.jython3.test;
 import com.ibm.wala.cast.ipa.callgraph.CAstCallGraphUtil;
 import com.ibm.wala.cast.python.client.PythonAnalysisEngine;
 import com.ibm.wala.cast.python.loader.PythonLoaderFactory;
+import com.ibm.wala.cast.python.module.PyScriptModule;
 import com.ibm.wala.cast.python.types.PythonTypes;
 import com.ibm.wala.cast.python.util.PythonInterpreter;
 import com.ibm.wala.cast.python.util.TestCallGraphShape;
@@ -63,13 +64,13 @@ public abstract class TestPythonCallGraphShape extends TestCallGraphShape {
 		try {
 			File f = new File(name);
 			if (f.exists()) {
-				return new SourceURLModule(f.toURI().toURL());
+				return new PyScriptModule(f.toURI().toURL());
 			} else {
 				URL url = new URL(name);
-				return new SourceURLModule(url);
+				return new PyScriptModule(url);
 			}
 		} catch (MalformedURLException e) {
-			return new SourceURLModule(getClass().getClassLoader().getResource(name));
+			return new PyScriptModule(getClass().getClassLoader().getResource(name));
 		}
 	}
 

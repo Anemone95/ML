@@ -152,7 +152,7 @@ public abstract class PythonAnalysisEngine<T>
 	// FIXME path/scriptname
 	private String scriptName(Module m) {
 		String path = ((ModuleEntry)m).getName();
-		return "Lscript " + (path.contains("/")? path.substring(path.lastIndexOf('/')+1): path);
+		return "Lscript " + path;
 	}
 
 	@Override

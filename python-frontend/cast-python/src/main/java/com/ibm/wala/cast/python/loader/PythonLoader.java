@@ -14,6 +14,7 @@ import com.ibm.wala.cast.python.global.SystemPath;
 import com.ibm.wala.cast.python.ir.PythonCAstToIRTranslator;
 import com.ibm.wala.cast.python.ir.PythonLanguage;
 import com.ibm.wala.cast.python.module.PyLibURLModule;
+import com.ibm.wala.cast.python.module.PyScriptModule;
 import com.ibm.wala.cast.python.types.PythonTypes;
 import com.ibm.wala.cast.python.util.PathUtil;
 import com.ibm.wala.cast.tree.CAst;
@@ -111,38 +112,35 @@ public abstract class PythonLoader extends CAstAbstractModuleLoader {
 
         Path rootPath=null;
         for (Module module : modules) {
-            if (module instanceof PyLibURLModule){
-                continue;
-            }
-            Class<?> thisModuleClass = module.getClass();
-            if (moduleClass == null) {
-                moduleClass = thisModuleClass;
-            } else if (!moduleClass.equals(thisModuleClass)) {
-                System.err.println("[WARN] module type doesn't match, to ensure project root, plz use same module type");
-            }
-            for (Iterator<? extends ModuleEntry> it = module.getEntries(); it.hasNext(); ) {
-                ModuleEntry moduleEntry = it.next();
-                // 只能保证同一种来源
-                Path modulePath = PathUtil.getPath(moduleEntry.getName());
-                if (rootPath == null || rootPath.toString().length() > modulePath.getParent().toString().length()) {
-                    rootPath = modulePath.getParent();
+            if (module instanceof PyScriptModule){
+                Class<?> thisModuleClass = module.getClass();
+                if (moduleClass == null) {
+                    moduleClass = thisModuleClass;
+                } else if (!moduleClass.equals(thisModuleClass)) {
+                    System.err.println("[WARN] module type doesn't match, to ensure project root, plz use same module type");
                 }
+                for (Iterator<? extends ModuleEntry> it = module.getEntries(); it.hasNext(); ) {
+                    ModuleEntry moduleEntry = it.next();
+                    // 只能保证同一种来源
+                    Path modulePath = PathUtil.getPath(moduleEntry.getName());
+                    if (rootPath == null || rootPath.toString().length() > modulePath.getParent().toString().length()) {
+                        rootPath = modulePath.getParent();
+                    }
+                }
+            } else {
+                System.err.println("Not PyScriptModule");
             }
         }
 
         SystemPath.getInstance().setAppPath(rootPath);
 
         for (Module module : modules) {
-            if (module instanceof PyLibURLModule){
-                continue;
-            } else {
-                for (Iterator<? extends ModuleEntry> it = module.getEntries(); it.hasNext(); ) {
-                    ModuleEntry moduleEntry = it.next();
-                    Path path = PathUtil.getPath(moduleEntry.getName());
-                    TypeName moduleName = TypeName.string2TypeName("Lscript " + rootPath.relativize(path));
-                    CoreClass tempPyScript = new CoreClass(moduleName, EmptyPyScript.getName(), this, null);
-                    types.put(moduleName, tempPyScript);
-                }
+            for (Iterator<? extends ModuleEntry> it = module.getEntries(); it.hasNext(); ) {
+                ModuleEntry moduleEntry = it.next();
+                String path = moduleEntry.getName();
+                TypeName moduleName = TypeName.string2TypeName("Lscript " + path);
+                CoreClass tempPyScript = new CoreClass(moduleName, EmptyPyScript.getName(), this, null);
+                types.put(moduleName, tempPyScript);
             }
         }
         super.init(modules);
