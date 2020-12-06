@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 import java.util.Collection;
 
 import com.ibm.wala.cast.ir.translator.TranslatorToCAst;
+import com.ibm.wala.cast.python.global.ImportType;
 import com.ibm.wala.cast.python.ipa.summaries.BuiltinFunctions;
 import com.ibm.wala.cast.python.ir.PythonCAstToIRTranslator;
 import com.ibm.wala.cast.tree.CAst;
@@ -54,7 +55,7 @@ public abstract class AbstractTransToCAst<T> implements TranslatorToCAst {
                         notePosition(
                                 cast.makeNode(CAstNode.DECL_STMT,
                                         cast.makeConstant(new CAstSymbolImpl(n, PythonCAstToIRTranslator.Any)),
-                                        cast.makeNode(CAstNode.PRIMITIVE, cast.makeConstant("import"), cast.makeConstant(n))),
+                                        cast.makeNode(CAstNode.PRIMITIVE, cast.makeConstant(ImportType.IMPORT), cast.makeConstant(n))),
                                 CAstSourcePositionMap.NO_INFORMATION));
             }
 
@@ -68,23 +69,19 @@ public abstract class AbstractTransToCAst<T> implements TranslatorToCAst {
             if (scriptName.endsWith("__init__.py")) {
                 File[] fs = file.getParentFile().listFiles();    //遍历path下的文件和目录，放在File数组中
                 for (File f : fs) {                    //遍历File[]数组
-                    String scriptName;
-                    if (f.isDirectory()) {
-                        scriptName = f.toURI().toString() + "__init__";
-                    } else {
-                        scriptName = f.toURI().toString();
-                        scriptName = scriptName.substring(0, scriptName.length() - 3);
+                    if (f.equals(file)) continue;
+                    Path modulePath=file.getParentFile().toPath().relativize(f.toPath());
+                    String moduleName = modulePath.toString();
+
+                    if (moduleName.endsWith(".py")) {
+                        moduleName = moduleName.substring(0, moduleName.length() - 3);
                     }
-                    Path rel = file.getParentFile().toPath().relativize(f.toPath());
-                    String field = rel.toString();
-                    if (rel.toString().endsWith(".py")) {
-                        field = field.substring(0, field.length() - 3);
-                    }
+
                     elts.add(
                             notePosition(
                                     cast.makeNode(CAstNode.DECL_STMT,
-                                            cast.makeConstant(new CAstSymbolImpl(field, PythonCAstToIRTranslator.Any)),
-                                            cast.makeNode(CAstNode.PRIMITIVE, cast.makeConstant("import"), cast.makeConstant(scriptName))),
+                                            cast.makeConstant(new CAstSymbolImpl(moduleName, PythonCAstToIRTranslator.Any)),
+                                            cast.makeNode(CAstNode.PRIMITIVE, cast.makeConstant(ImportType.IMPORT_INIT), cast.makeConstant(moduleName))),
                                     CAstSourcePositionMap.NO_INFORMATION));
                 }
             }

@@ -1213,8 +1213,18 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
 
         private String name(alias n) {
             String s = n.getInternalAsname() == null ? n.getInternalName() : n.getInternalAsname();
+            // import pkg1.module, pkg1成为全局变量
             if (s.contains(".")) {
                 s = s.substring(s.lastIndexOf('.') + 1);
+            }
+            return s;
+        }
+
+        private String importName(alias n) {
+            String s = n.getInternalAsname() == null ? n.getInternalName() : n.getInternalAsname();
+            // import pkg1.module, pkg1成为全局变量
+            if (s.contains(".")) {
+                s = s.substring(0,s.indexOf('.'));
             }
             return s;
         }
@@ -1225,10 +1235,10 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
             CAstNode[] elts = new CAstNode[arg0.getInternalNames().size()];
             for (alias n : arg0.getInternalNames()) {
                 CAstNode obj = importAst(n.getInternalNameNodes());
-                elts[i++] = notePosition(cast.makeNode(CAstNode.DECL_STMT,
-                        cast.makeConstant(new CAstSymbolImpl(name(n), PythonCAstToIRTranslator.Any)),
-                        obj != null ?
-                                obj :
+                elts[i++] = notePosition(
+                        cast.makeNode(CAstNode.DECL_STMT,
+                                cast.makeConstant(new CAstSymbolImpl(name(n), PythonCAstToIRTranslator.Any)),
+                        obj != null ? obj :
                                 cast.makeNode(CAstNode.PRIMITIVE, cast.makeConstant("import"), cast.makeConstant(n.getInternalName()))), n);
             }
             return cast.makeNode(CAstNode.BLOCK_STMT, elts);
@@ -1495,6 +1505,10 @@ abstract public class PythonParser<T> extends AbstractTransToCAst<T> {
                 for (PythonTree c : arg0.getChildren()) {
                     elts.add(c.accept(this));
                 }
+                return cast.makeNode(CAstNode.BLOCK_EXPR, elts.toArray(new CAstNode[elts.size()]));
+            } else if (scriptName().endsWith("__init__.py")){
+                java.util.List<CAstNode> elts = new ArrayList<>();
+                defaultImports(elts);
                 return cast.makeNode(CAstNode.BLOCK_EXPR, elts.toArray(new CAstNode[elts.size()]));
             } else {
                 return cast.makeNode(CAstNode.EMPTY);
