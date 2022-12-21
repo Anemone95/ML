@@ -39,6 +39,7 @@ import com.ibm.wala.types.TypeReference;
 import com.ibm.wala.types.annotations.Annotation;
 import com.ibm.wala.util.collections.HashSetFactory;
 import com.ibm.wala.util.strings.Atom;
+import com.ibm.wala.classLoader.Module;
 
 import static com.ibm.wala.cast.python.types.PythonTypes.EmptyPyScript;
 import static com.ibm.wala.cast.python.types.PythonTypes.UnknownObject;
